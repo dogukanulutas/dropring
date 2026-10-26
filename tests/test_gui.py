@@ -12,7 +12,7 @@ from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
-from dropring import presets
+from dropring import engines, presets
 from dropring.clipboard import parse_uri_list
 from dropring.engines import Edge
 from dropring.gui.donut import INNER, OUTER, slice_span
@@ -276,9 +276,11 @@ class ControllerTests(unittest.TestCase):
         self.addCleanup(self.controller.queue.shutdown)
         self.addCleanup(self.controller.server.close)
         self.files = Files(self, "shot.png")
-        import subprocess
+        from PySide6.QtGui import QColor, QImage
 
-        subprocess.run(["magick", "-size", "40x30", "xc:red", str(self.files.paths[0])], check=True)
+        image = QImage(40, 30, QImage.Format_RGB32)
+        image.fill(QColor("red"))
+        image.save(str(self.files.paths[0]))
 
     def wait_for_job(self):
         for _ in range(100):
@@ -288,7 +290,7 @@ class ControllerTests(unittest.TestCase):
                 return jobs[-1]
         self.fail("conversion did not finish")
 
-    @unittest.skipUnless(__import__("shutil").which("magick"), "ImageMagick not installed")
+    @unittest.skipUnless(engines.engine("imagemagick").available(), "ImageMagick not installed")
     def test_file_manager_ring_converts(self):
         from PySide6.QtGui import QEnterEvent
 
@@ -305,7 +307,7 @@ class ControllerTests(unittest.TestCase):
         self.assertTrue(job.outputs[0].exists())
         self.assertEqual(self.controller.overlays, [])
 
-    @unittest.skipUnless(__import__("shutil").which("magick"), "ImageMagick not installed")
+    @unittest.skipUnless(engines.engine("imagemagick").available(), "ImageMagick not installed")
     def test_convert_command(self):
         self.controller.handle({"cmd": "convert", "preset": "to-webp", "files": [str(p) for p in self.files.paths]})
         job = self.wait_for_job()

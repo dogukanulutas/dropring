@@ -7,7 +7,7 @@ from pathlib import Path
 
 os.environ["DROPRING_LANG"] = "en"
 
-from dropring import presets
+from dropring import engines, presets
 from dropring.jobs import DONE, JobQueue
 
 
@@ -38,16 +38,21 @@ class ConversionTests(unittest.TestCase):
     def image(self):
         path = self.folder / "picture.png"
         if not path.exists():
-            subprocess.run(["magick", "-size", "120x80", "gradient:red-blue", str(path)], check=True)
+            from PySide6.QtGui import QColor, QImage
+
+            image = QImage(120, 80, QImage.Format_RGB32)
+            image.fill(QColor("#7F77DD"))
+            image.save(str(path))
         return path
 
-    @tool("magick")
+    @unittest.skipUnless(engines.engine("imagemagick").available(), "ImageMagick not installed")
     def test_image(self):
         out = self.convert([self.image()], "to-jpg")[0]
         self.assertEqual(out.suffix, ".jpg")
         half = self.convert([self.image()], "half-size")[0]
-        size = subprocess.run(["magick", "identify", "-format", "%wx%h", str(half)], capture_output=True, text=True).stdout
-        self.assertEqual(size, "60x40")
+        from PySide6.QtGui import QImage
+
+        self.assertEqual(QImage(str(half)).size().toTuple(), (60, 40))
 
     @tool("ffmpeg")
     def test_video_to_audio(self):
