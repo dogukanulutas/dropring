@@ -16,6 +16,7 @@ jobs:
       - name: Install tools
         timeout-minutes: 8
         run: |
+          echo "http://archive.ubuntu.com/ubuntu/" | sudo tee /etc/apt/apt-mirrors.txt
           sudo sed -i 's|http://azure.archive.ubuntu.com|http://archive.ubuntu.com|g' /etc/apt/sources.list.d/*.sources /etc/apt/sources.list 2>/dev/null || true
           sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 update
           sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=30 install -y --no-install-recommends imagemagick ffmpeg poppler-utils ghostscript libegl1 libgl1 libxkbcommon0 libfontconfig1 libdbus-1-3
