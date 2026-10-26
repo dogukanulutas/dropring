@@ -134,6 +134,13 @@ class ImageMagickEngine(Engine):
     id = "imagemagick"
     name = "ImageMagick"
     binaries = ("magick",)
+
+    @property
+    def command(self):
+        return "magick" if shutil.which("magick") else "convert"
+
+    def available(self):
+        return bool(shutil.which("magick") or shutil.which("convert") and shutil.which("identify"))
     animated = {"gif", "webp"}
     codec_names = {
         "jpg": "JPEG", "png": "PNG", "webp": "WEBP", "avif": "AVIF", "heic": "HEIC", "jxl": "JXL",
@@ -143,7 +150,7 @@ class ImageMagickEngine(Engine):
 
     def supported(self):
         try:
-            output = subprocess.run(["magick", "-list", "format"], capture_output=True, text=True, timeout=20).stdout
+            output = subprocess.run([self.command, "-list", "format"], capture_output=True, text=True, timeout=20).stdout
         except (OSError, subprocess.TimeoutExpired):
             return set(), set()
         readable, writable = set(), set()
@@ -174,11 +181,11 @@ class ImageMagickEngine(Engine):
         options = ctx.options
         read = str(source)
         if source_format == "svg":
-            args = ["magick", "-background", "none", "-density", str(options.get("dpi", 150)), read]
+            args = [self.command, "-background", "none", "-density", str(options.get("dpi", 150)), read]
         else:
             if target_format not in self.animated or source_format not in self.animated:
                 read += "[0]"
-            args = ["magick", read]
+            args = [self.command, read]
         if source_format != "svg":
             args.append("-auto-orient")
         if options.get("resize"):
